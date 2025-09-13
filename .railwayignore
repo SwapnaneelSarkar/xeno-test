@@ -1,0 +1,73 @@
+# Railway ignore file
+# Files and directories to exclude from Railway deployment
+
+# Development files
+.env
+.env.local
+.env.development
+.env.test
+*.log
+logs/
+*.log.*
+
+# Test files
+__tests__/
+tests/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+test-*.js
+jest.config.js
+
+# Documentation
+*.md
+docs/
+RAILWAY_DEPLOYMENT.md
+CI-CD.md
+API_DOCUMENTATION.md
+CRITICAL_FEATURES_STATUS.md
+ENDPOINT_TEST_RESULTS.md
+OAUTH_SETUP.md
+RATE_LIMITER_*.md
+WEBHOOKS.md
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Kubernetes files
+k8s/
+helm-chart/
+
+# Git files
+.git/
+.gitignore
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node modules (will be installed by Railway)
+node_modules/
+
+# Build artifacts
+dist/
+build/
+coverage/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Local development scripts
+deploy-railway.sh
+check-tenant.js

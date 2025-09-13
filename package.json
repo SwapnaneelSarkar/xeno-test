@@ -29,7 +29,11 @@
     "k8s:delete": "kubectl delete -f k8s/",
     "helm:install": "helm upgrade --install xeno-fde-backend ./helm-chart --create-namespace",
     "helm:uninstall": "helm uninstall xeno-fde-backend",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "railway:deploy": "railway up",
+    "railway:logs": "railway logs",
+    "railway:status": "railway status",
+    "postinstall": "npx prisma generate"
   },
   "keywords": [
     "shopify",

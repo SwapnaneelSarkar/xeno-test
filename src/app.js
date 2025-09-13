@@ -22,7 +22,7 @@ const metricsRoutes = require("./routes/metrics")
 const healthRoutes = require("./routes/health")
 
 const app = express()
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 8080
 
 // Security middleware
 app.use(helmetConfig)

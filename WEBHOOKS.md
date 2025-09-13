@@ -9,6 +9,8 @@ The webhook system handles real-time data synchronization between Shopify stores
 ## Features
 
 - ✅ **Webhook Verification**: HMAC-SHA256 signature verification
+
+
 - ✅ **Multi-tenant Support**: Automatic tenant detection from shop domain
 - ✅ **Event Logging**: Complete webhook event tracking in database
 - ✅ **Retry Mechanism**: Failed webhook retry functionality
