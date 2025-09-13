@@ -1,53 +1,11 @@
 const helmet = require('helmet')
-const rateLimit = require('express-rate-limit')
-const Redis = require('ioredis')
 const { body, validationResult } = require('express-validator')
-
-// Redis client for rate limiting
-const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT || 6379,
-  password: process.env.REDIS_PASSWORD,
-  retryDelayOnFailover: 100,
-  enableReadyCheck: false,
-  maxRetriesPerRequest: null
-})
-
-// Rate limiting configuration
-const createRateLimit = (windowMs, max, message) => {
-  return rateLimit({
-    windowMs,
-    max,
-    message: { error: message },
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: (req) => {
-      // Skip rate limiting for health checks
-      return req.path === '/health'
-    }
-  })
-}
-
-// General API rate limiting
-const generalRateLimit = createRateLimit(
-  15 * 60 * 1000, // 15 minutes
-  100, // limit each IP to 100 requests per windowMs
-  'Too many requests from this IP, please try again later'
-)
-
-// Strict rate limiting for webhook endpoints
-const webhookRateLimit = createRateLimit(
-  15 * 60 * 1000, // 15 minutes
-  50, // limit each IP to 50 webhook requests per windowMs
-  'Too many webhook requests from this IP, please try again later'
-)
-
-// Strict rate limiting for auth endpoints
-const authRateLimit = createRateLimit(
-  15 * 60 * 1000, // 15 minutes
-  10, // limit each IP to 10 auth requests per windowMs
-  'Too many authentication attempts from this IP, please try again later'
-)
+const { 
+  redis, 
+  generalRateLimit, 
+  webhookRateLimit, 
+  authRateLimit 
+} = require('./redisRateLimiter')
 
 // Helmet configuration
 const helmetConfig = helmet({

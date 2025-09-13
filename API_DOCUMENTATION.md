@@ -585,9 +585,9 @@ Future<T> handleApiCall<T>(Future<http.Response> Function() apiCall) async {
 
 The API implements rate limiting with the following limits:
 
-- **General API:** 100 requests per 15 minutes
-- **Webhook endpoints:** 50 requests per 15 minutes
-- **Authentication endpoints:** 10 requests per 15 minutes
+- **General API:** 1500 requests per 15 minutes
+- **Webhook endpoints:** 750 requests per 15 minutes
+- **Authentication endpoints:** 150 requests per 15 minutes
 
 Rate limit headers are included in responses:
 - `X-RateLimit-Limit`: Maximum requests allowed

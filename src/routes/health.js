@@ -2,6 +2,7 @@ const express = require('express')
 const { PrismaClient } = require('@prisma/client')
 const { redis } = require('../middleware/security')
 const { logger } = require('../utils/logger')
+const { getCircuitBreakerHealth } = require('../services/circuitBreaker')
 
 const router = express.Router()
 const prisma = new PrismaClient()
@@ -58,6 +59,22 @@ router.get('/health', async (req, res) => {
     usage: {
       user: `${cpuUsage.user / 1000000}s`,
       system: `${cpuUsage.system / 1000000}s`
+    }
+  }
+
+  // Circuit breaker health
+  try {
+    const circuitBreakerHealth = getCircuitBreakerHealth()
+    healthCheck.checks.circuitBreaker = {
+      status: circuitBreakerHealth.state === 'CLOSED' ? 'UP' : 'DEGRADED',
+      state: circuitBreakerHealth.state,
+      stats: circuitBreakerHealth.stats,
+      dlqSize: circuitBreakerHealth.dlqSize
+    }
+  } catch (error) {
+    healthCheck.checks.circuitBreaker = {
+      status: 'DOWN',
+      error: error.message
     }
   }
 

@@ -2,7 +2,8 @@ const express = require('express')
 const router = express.Router()
 const webhookRegistration = require('../services/shopifyWebhookRegistration')
 const { PrismaClient } = require('@prisma/client')
-const logger = require('../utils/logger')
+const { logger } = require('../utils/logger')
+const { authenticateToken } = require('../middleware/auth')
 
 const prisma = new PrismaClient()
 
@@ -300,7 +301,7 @@ router.post('/retry-failed/:tenantId', async (req, res) => {
 })
 
 // Get webhook event statistics
-router.get('/stats/:tenantId', async (req, res) => {
+router.get('/stats/:tenantId', authenticateToken, async (req, res) => {
   try {
     const { tenantId } = req.params
     const { days = 7 } = req.query
@@ -387,6 +388,106 @@ router.post('/mark-failed/:eventId', async (req, res) => {
     })
   } catch (error) {
     logger.error('Mark webhook event as failed error:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Get webhook events (without tenantId for testing)
+router.get('/events', authenticateToken, async (req, res) => {
+  try {
+    const { page = 1, limit = 25, status, topic } = req.query
+    const skip = (parseInt(page) - 1) * parseInt(limit)
+
+    const where = {}
+    if (status) where.processed = status === 'processed'
+    if (topic) where.topic = topic
+
+    const [events, total] = await Promise.all([
+      prisma.webhookEvent.findMany({
+        where,
+        skip,
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.webhookEvent.count({ where })
+    ])
+
+    res.json({
+      events,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalItems: total,
+        itemsPerPage: parseInt(limit),
+        hasNextPage: skip + parseInt(limit) < total,
+        hasPreviousPage: parseInt(page) > 1
+      }
+    })
+  } catch (error) {
+    logger.error('Get webhook events error:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Get webhook stats (without tenantId for testing)
+router.get('/stats', authenticateToken, async (req, res) => {
+  try {
+    const { days = 7 } = req.query
+    const since = new Date(Date.now() - parseInt(days) * 24 * 60 * 60 * 1000)
+
+    const [totalEvents, processedEvents, failedEvents] = await Promise.all([
+      prisma.webhookEvent.count({
+        where: { createdAt: { gte: since } }
+      }),
+      prisma.webhookEvent.count({
+        where: { 
+          createdAt: { gte: since },
+          processed: true 
+        }
+      }),
+      prisma.webhookEvent.count({
+        where: { 
+          createdAt: { gte: since },
+          processed: false,
+          errorMessage: { not: null }
+        }
+      })
+    ])
+
+    const pendingEvents = totalEvents - processedEvents - failedEvents
+    const successRate = totalEvents > 0 ? (processedEvents / totalEvents) * 100 : 0
+
+    // Events by topic
+    const eventsByTopic = await prisma.webhookEvent.groupBy({
+      by: ['topic'],
+      where: { createdAt: { gte: since } },
+      _count: { topic: true }
+    })
+
+    // Events by status
+    const eventsByStatus = await prisma.webhookEvent.groupBy({
+      by: ['processed'],
+      where: { createdAt: { gte: since } },
+      _count: { processed: true }
+    })
+
+    res.json({
+      totalEvents,
+      processedEvents,
+      failedEvents,
+      pendingEvents,
+      successRate: parseFloat(successRate.toFixed(2)),
+      eventsByTopic: eventsByTopic.reduce((acc, item) => {
+        acc[item.topic] = item._count.topic
+        return acc
+      }, {}),
+      eventsByStatus: eventsByStatus.reduce((acc, item) => {
+        acc[item.processed ? 'processed' : 'failed'] = item._count.processed
+        return acc
+      }, {})
+    })
+  } catch (error) {
+    logger.error('Get webhook stats error:', error)
     res.status(500).json({ error: error.message })
   }
 })

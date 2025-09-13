@@ -74,6 +74,17 @@ app.use("*", (req, res) => {
 // Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack)
+  
+  // Handle JSON parsing errors
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: "Invalid JSON format" })
+  }
+  
+  // Handle Prisma validation errors
+  if (err.name === 'PrismaClientValidationError') {
+    return res.status(400).json({ error: "Invalid data format", details: err.message })
+  }
+  
   res.status(500).json({ error: "Something went wrong!" })
 })
 

@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client')
-const logger = require('../utils/logger')
+const { logger } = require('../utils/logger')
+const { processWebhookWithResilience } = require('./circuitBreaker')
 
 const prisma = new PrismaClient()
 
@@ -10,6 +11,20 @@ class WebhookService {
   async processOrderWebhook(webhookData, tenantId) {
     try {
       const { id, order_number, email, total_price, subtotal_price, tax_price, currency, financial_status, fulfillment_status, customer } = webhookData
+
+      // Validate required fields
+      if (!id || !order_number) {
+        throw new Error('Missing required order fields: id and order_number')
+      }
+
+      // Validate and parse numeric values safely
+      const totalPrice = total_price ? parseFloat(total_price) : 0
+      const subtotalPrice = subtotal_price ? parseFloat(subtotal_price) : null
+      const taxPrice = tax_price ? parseFloat(tax_price) : null
+
+      if (isNaN(totalPrice)) {
+        throw new Error(`Invalid total_price: ${total_price}`)
+      }
 
       // Find or create customer if exists
       let customerId = null
@@ -53,13 +68,13 @@ class WebhookService {
           customerShopifyId: customer?.id?.toString() || null,
           customerId,
           orderNumber: order_number,
-          email,
-          totalPrice: parseFloat(total_price),
-          subtotalPrice: subtotal_price ? parseFloat(subtotal_price) : null,
-          taxPrice: tax_price ? parseFloat(tax_price) : null,
+          email: email || null,
+          totalPrice,
+          subtotalPrice,
+          taxPrice,
           currency: currency || 'USD',
-          financialStatus: financial_status,
-          fulfillmentStatus: fulfillment_status
+          financialStatus: financial_status || null,
+          fulfillmentStatus: fulfillment_status || null
         },
         create: {
           tenantId,
@@ -67,13 +82,13 @@ class WebhookService {
           customerShopifyId: customer?.id?.toString() || null,
           customerId,
           orderNumber: order_number,
-          email,
-          totalPrice: parseFloat(total_price),
-          subtotalPrice: subtotal_price ? parseFloat(subtotal_price) : null,
-          taxPrice: tax_price ? parseFloat(tax_price) : null,
+          email: email || null,
+          totalPrice,
+          subtotalPrice,
+          taxPrice,
           currency: currency || 'USD',
-          financialStatus: financial_status,
-          fulfillmentStatus: fulfillment_status
+          financialStatus: financial_status || null,
+          fulfillmentStatus: fulfillment_status || null
         }
       })
 
@@ -274,35 +289,48 @@ class WebhookService {
    */
   async processWebhook(topic, webhookData, tenantId) {
     try {
-      let result
-
-      switch (topic) {
-        case 'orders/create':
-        case 'orders/updated':
-        case 'orders/paid':
-        case 'orders/cancelled':
-        case 'orders/fulfilled':
-          result = await this.processOrderWebhook(webhookData, tenantId)
-          break
-
-        case 'products/create':
-        case 'products/update':
-          result = await this.processProductWebhook(webhookData, tenantId)
-          break
-
-        case 'customers/create':
-        case 'customers/update':
-          result = await this.processCustomerWebhook(webhookData, tenantId)
-          break
-
-        case 'app/uninstalled':
-          result = await this.processAppUninstalledWebhook(webhookData, tenantId)
-          break
-
-        default:
-          logger.warn(`Unhandled webhook topic: ${topic}`)
-          return { success: false, message: 'Unhandled webhook topic' }
+      // Create webhook event object for circuit breaker
+      const webhookEvent = {
+        id: webhookData.id?.toString() || 'unknown',
+        tenantId,
+        topic,
+        payload: webhookData
       }
+
+      // Use circuit breaker for resilient processing
+      const result = await processWebhookWithResilience(webhookEvent, async (event) => {
+        let processingResult
+
+        switch (event.topic) {
+          case 'orders/create':
+          case 'orders/updated':
+          case 'orders/paid':
+          case 'orders/cancelled':
+          case 'orders/fulfilled':
+            processingResult = await this.processOrderWebhook(event.payload, event.tenantId)
+            break
+
+          case 'products/create':
+          case 'products/update':
+            processingResult = await this.processProductWebhook(event.payload, event.tenantId)
+            break
+
+          case 'customers/create':
+          case 'customers/update':
+            processingResult = await this.processCustomerWebhook(event.payload, event.tenantId)
+            break
+
+          case 'app/uninstalled':
+            processingResult = await this.processAppUninstalledWebhook(event.payload, event.tenantId)
+            break
+
+          default:
+            logger.warn(`Unhandled webhook topic: ${event.topic}`)
+            return { success: false, message: 'Unhandled webhook topic' }
+        }
+
+        return processingResult
+      })
 
       return result
     } catch (error) {
