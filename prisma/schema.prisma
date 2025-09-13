@@ -1,0 +1,166 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id              String    @id @default(cuid())
+  name            String
+  email           String    @unique
+  shopDomain      String    @unique
+  accessToken     String?
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  lastOrderSync   DateTime?
+  lastProductSync DateTime?
+  lastCustomerSync DateTime?
+  
+  // Relations
+  stores    Store[]
+  customers Customer[]
+  products  Product[]
+  orders    Order[]
+  
+  @@map("tenants")
+}
+
+model Store {
+  id          String   @id @default(cuid())
+  shopDomain  String
+  accessToken String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Foreign keys
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, shopDomain])
+  @@index([tenantId])
+  @@map("stores")
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  shopifyId  String
+  email      String?
+  firstName  String?
+  lastName   String?
+  phone      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Foreign keys
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  orders Order[]
+  
+  @@unique([tenantId, shopifyId])
+  @@index([tenantId])
+  @@index([tenantId, shopifyId])
+  @@index([email])
+  @@map("customers")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  shopifyId   String
+  title       String
+  sku         String?
+  price       Decimal?
+  handle      String?
+  description String?
+  vendor      String?
+  productType String?
+  tags        String[]
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Foreign keys
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, shopifyId])
+  @@index([tenantId])
+  @@index([tenantId, shopifyId])
+  @@index([sku])
+  @@map("products")
+}
+
+model Order {
+  id                String   @id @default(cuid())
+  shopifyId         String
+  customerShopifyId String?
+  orderNumber       String?
+  email             String?
+  totalPrice        Decimal
+  subtotalPrice     Decimal?
+  taxPrice          Decimal?
+  currency          String   @default("USD")
+  financialStatus   String?
+  fulfillmentStatus String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Foreign keys
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  
+  @@unique([tenantId, shopifyId])
+  @@index([tenantId])
+  @@index([tenantId, shopifyId])
+  @@index([customerShopifyId])
+  @@index([email])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model SyncLog {
+  id          String   @id @default(cuid())
+  tenantId    String
+  entityType  String   // 'customer', 'product', 'order'
+  entityId    String   // shopifyId
+  operation   String   // 'create', 'update', 'delete'
+  status      String   // 'pending', 'success', 'failed'
+  errorMessage String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([tenantId, entityType])
+  @@index([status])
+  @@index([createdAt])
+  @@map("sync_logs")
+}
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  tenantId    String?
+
+  shopifyId   String
+  topic       String
+  payload     Json
+  processed   Boolean  @default(false)
+  processedAt DateTime?
+  errorMessage String?
+  createdAt   DateTime @default(now())
+  
+  @@unique([tenantId, topic, shopifyId])
+  @@index([tenantId])
+  @@index([topic])
+  @@index([processed])
+  @@index([createdAt])
+  @@map("webhook_events")
+}

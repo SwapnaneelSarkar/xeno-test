@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  app-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-test:5432/xeno_test
+      - REDIS_HOST=redis-test
+      - REDIS_PORT=6379
+      - JWT_SECRET=test-secret-key
+      - WEBHOOK_SECRET=test-webhook-secret
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    command: ["npm", "test"]
+
+  postgres-test:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=xeno_test
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-test:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_test_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_test_data:
+  redis_test_data:

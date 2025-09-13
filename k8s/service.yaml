@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: xeno-fde-backend-service
+  namespace: xeno-fde-backend
+  labels:
+    app: xeno-fde-backend
+spec:
+  selector:
+    app: xeno-fde-backend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    protocol: TCP
+  type: ClusterIP

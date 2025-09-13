@@ -1,0 +1,60 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 50
+      name: "Ramp up load"
+    - duration: 300
+      arrivalRate: 100
+      name: "Sustained load"
+    - duration: 60
+      arrivalRate: 200
+      name: "Peak load"
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+
+scenarios:
+  - name: "Health check load test"
+    weight: 30
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+  - name: "Webhook processing load test"
+    weight: 50
+    flow:
+      - post:
+          url: "/api/webhooks"
+          headers:
+            X-Shopify-Topic: "orders/create"
+            X-Shopify-Shop-Domain: "test-shop.myshopify.com"
+            X-Shopify-Hmac-Sha256: "test-hmac"
+          json:
+            id: "{{ $randomInt(1000, 9999) }}"
+            order_number: "TEST-{{ $randomInt(1000, 9999) }}"
+            email: "test{{ $randomInt(1000, 9999) }}@example.com"
+            total_price: "{{ $randomInt(10, 1000) }}.99"
+            currency: "USD"
+            financial_status: "paid"
+            created_at: "{{ $isoTimestamp }}"
+            customer:
+              id: "{{ $randomInt(1000, 9999) }}"
+              email: "test{{ $randomInt(1000, 9999) }}@example.com"
+              first_name: "Test"
+              last_name: "User"
+          expect:
+            - statusCode: [200, 401] # 401 expected due to invalid HMAC
+
+  - name: "Metrics endpoint load test"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/metrics/metrics"
+          expect:
+            - statusCode: 200

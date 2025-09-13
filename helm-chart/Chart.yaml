@@ -1,0 +1,16 @@
+apiVersion: v2
+name: xeno-fde-backend
+description: A Helm chart for Xeno FDE Backend Service
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - shopify
+  - backend
+  - api
+home: https://github.com/your-org/xeno-fde-backend
+sources:
+  - https://github.com/your-org/xeno-fde-backend
+maintainers:
+  - name: swapnaneelsarkar
+    email: swapnaneelsarkar@example.com
