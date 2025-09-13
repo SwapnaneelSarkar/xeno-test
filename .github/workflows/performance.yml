@@ -5,8 +5,8 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
-  schedule:
-    - cron: '0 3 * * 0' # Run every Sunday at 3 AM
+  # schedule:
+  #   - cron: '0 3 * * 0' # Run every Sunday at 3 AM - DISABLED
 
 jobs:
   performance-test:

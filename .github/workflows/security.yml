@@ -1,12 +1,17 @@
 name: Security Scan
 
 on:
-  schedule:
-    - cron: '0 2 * * 1' # Run every Monday at 2 AM
+  # schedule:
+  #   - cron: '0 2 * * 1' # Run every Monday at 2 AM - DISABLED
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
 
 jobs:
   security-scan:
@@ -62,5 +67,7 @@ jobs:
 
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
           sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
