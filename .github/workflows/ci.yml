@@ -72,6 +72,7 @@ jobs:
         with:
           args: --severity-threshold=high
         continue-on-error: true
+        if: ${{ secrets.SNYK_TOKEN != '' }}
 
   # Unit and integration tests
   test:
