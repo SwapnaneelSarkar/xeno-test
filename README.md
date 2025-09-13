@@ -9,6 +9,23 @@ Backend service for Shopify integration with comprehensive data synchronization 
 - Docker and Docker Compose
 - PostgreSQL (if running locally)
 
+### 🚀 Deploy to Railway (Recommended)
+
+For production deployment, use Railway:
+
+```bash
+# Run the setup script
+./setup-railway-deployment.sh
+
+# Or follow the detailed guide
+# See GITHUB_RAILWAY_SETUP.md
+```
+
+**One-click deployment:**
+1. Push to GitHub
+2. Railway automatically deploys
+3. Your app is live at `https://your-app.railway.app`
+
 ### Installation
 
 1. **Clone and install dependencies:**
