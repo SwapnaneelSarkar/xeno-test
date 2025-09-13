@@ -4,11 +4,12 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "8080:8080"
     environment:
       - NODE_ENV=production
+      - PORT=8080
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/xeno_prod
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -21,7 +22,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3

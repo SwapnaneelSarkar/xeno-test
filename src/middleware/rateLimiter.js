@@ -3,7 +3,7 @@ const RedisStore = require("rate-limit-redis")
 const Redis = require("ioredis")
 
 // Redis client for rate limiting
-const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379")
+const redis = new Redis(process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`)
 
 // General API rate limiter
 const apiLimiter = rateLimit({

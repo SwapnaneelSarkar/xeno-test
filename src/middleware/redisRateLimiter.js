@@ -7,7 +7,8 @@ const redis = new Redis({
   password: process.env.REDIS_PASSWORD,
   retryDelayOnFailover: 100,
   enableReadyCheck: false,
-  maxRetriesPerRequest: null
+  maxRetriesPerRequest: null,
+  lazyConnect: true
 })
 
 // Custom Redis rate limiter
