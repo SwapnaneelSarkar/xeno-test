@@ -3,6 +3,9 @@ const cors = require("cors")
 const morgan = require("morgan")
 require("dotenv").config()
 
+// Import Railway configuration
+const railwayConfig = require("./config/railway")
+
 // Import security middleware
 const {
   helmetConfig,
@@ -22,7 +25,15 @@ const metricsRoutes = require("./routes/metrics")
 const healthRoutes = require("./routes/health")
 
 const app = express()
-const PORT = process.env.PORT || 8080
+const PORT = railwayConfig.app.port
+
+// Log Railway environment info
+if (railwayConfig.isRailway) {
+  console.log(`🚀 Running on Railway (${railwayConfig.environment})`)
+  console.log(`📊 Project ID: ${railwayConfig.projectId}`)
+  console.log(`🔧 Service ID: ${railwayConfig.serviceId}`)
+  console.log(`🌐 Port: ${PORT}`)
+}
 
 // Security middleware
 app.use(helmetConfig)
@@ -45,8 +56,8 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms :b
 app.use(express.json({ limit: "10mb" }))
 app.use(express.urlencoded({ extended: true }))
 
-// HTTPS redirection in production
-if (process.env.NODE_ENV === 'production') {
+// HTTPS redirection in production (but not on Railway as it handles this)
+if (process.env.NODE_ENV === 'production' && !railwayConfig.isRailway) {
   app.use((req, res, next) => {
     if (req.header('x-forwarded-proto') !== 'https') {
       res.redirect(`https://${req.header('host')}${req.url}`)

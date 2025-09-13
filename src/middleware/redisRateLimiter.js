@@ -1,15 +1,42 @@
 const Redis = require('ioredis')
 
-// Redis client for rate limiting
-const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT || 6379,
-  password: process.env.REDIS_PASSWORD,
-  retryDelayOnFailover: 100,
-  enableReadyCheck: false,
-  maxRetriesPerRequest: null,
-  lazyConnect: true
-})
+// Redis client for rate limiting with graceful fallback
+let redis = null
+
+try {
+  redis = new Redis({
+    host: process.env.REDIS_HOST || 'localhost',
+    port: process.env.REDIS_PORT || 6379,
+    password: process.env.REDIS_PASSWORD,
+    retryDelayOnFailover: 100,
+    enableReadyCheck: false,
+    maxRetriesPerRequest: null,
+    lazyConnect: true,
+    connectTimeout: 5000,
+    commandTimeout: 5000
+  })
+
+  // Handle Redis connection errors
+  redis.on('error', (error) => {
+    console.warn('Redis connection error:', error.message)
+    // Don't exit the process, just log the error
+  })
+
+  redis.on('connect', () => {
+    console.log('Redis connected successfully')
+  })
+
+} catch (error) {
+  console.warn('Failed to initialize Redis:', error.message)
+  // Create a mock Redis client for graceful degradation
+  redis = {
+    ping: () => Promise.reject(new Error('Redis not available')),
+    pipeline: () => ({
+      incr: () => ({ exec: () => Promise.resolve([[null, 1]]) }),
+      expire: () => ({ exec: () => Promise.resolve([[null, 1]]) })
+    })
+  }
+}
 
 // Custom Redis rate limiter
 class RedisRateLimiter {

@@ -37,7 +37,9 @@ router.get('/health', async (req, res) => {
       status: 'DOWN', 
       error: error.message 
     }
-    healthCheck.message = 'Service Unavailable'
+    // Don't mark the entire service as unavailable if Redis is down
+    // Redis is used for rate limiting, not critical for basic functionality
+    console.warn('Redis health check failed:', error.message)
   }
 
   // Memory usage
@@ -85,9 +87,15 @@ router.get('/health', async (req, res) => {
 // Readiness check (for Kubernetes)
 router.get('/ready', async (req, res) => {
   try {
-    // Check if all critical services are available
+    // Check if critical services are available (database is critical, Redis is not)
     await prisma.$queryRaw`SELECT 1`
-    await redis.ping()
+    
+    // Try Redis but don't fail if it's not available
+    try {
+      await redis.ping()
+    } catch (redisError) {
+      console.warn('Redis not available for readiness check:', redisError.message)
+    }
     
     res.status(200).json({ 
       status: 'ready',

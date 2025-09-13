@@ -12,3 +12,12 @@ restartPolicyMaxRetries = 10
 [environments.production.variables]
 NODE_ENV = "production"
 PORT = "8080"
+# Railway will automatically provide DATABASE_URL
+# Redis is optional - app will work without it
+REDIS_HOST = ""
+REDIS_PORT = ""
+REDIS_PASSWORD = ""
+# Set these in Railway dashboard
+# JWT_SECRET = "your-production-jwt-secret"
+# WEBHOOK_SECRET = "your-production-webhook-secret"
+# ALLOWED_ORIGINS = "https://yourdomain.com"

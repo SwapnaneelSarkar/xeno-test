@@ -33,6 +33,11 @@ const corsOptions = {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true)
     
+    // On Railway, be more permissive if no specific origins are set
+    if (process.env.RAILWAY_ENVIRONMENT && allowedOrigins.includes('*')) {
+      return callback(null, true)
+    }
+    
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true)
     } else {
