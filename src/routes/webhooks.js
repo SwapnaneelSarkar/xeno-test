@@ -22,16 +22,17 @@ router.post("/", verifyShopifyWebhook, extractTenant, async (req, res) => {
       return res.status(200).json({ 
         success: true, 
         message: 'Webhook already processed',
-        data: { message: 'Webhook already processed', idempotent: true }
+        idempotent: true
       })
     }
 
-    // Log webhook event
+    // Log webhook event (create with processed: false)
     await webhookService.logWebhookEvent(
       tenant.id,
       shopifyId,
       topic,
-      webhookData
+      webhookData,
+      false // explicitly set processed to false
     )
 
     // Process webhook based on topic

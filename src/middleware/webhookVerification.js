@@ -38,15 +38,22 @@ const verifyShopifyWebhook = (req, res, next) => {
       .update(rawBody, 'utf8')
       .digest('base64')
 
-    // In test mode, allow test HMAC
-    const isTestMode = process.env.NODE_ENV === 'test' || hmacHeader === 'test-hmac'
+    // In test mode, allow test HMAC but still verify invalid ones
+    const isTestMode = process.env.NODE_ENV === 'test'
+    const isTestHmac = hmacHeader === 'test-hmac'
     
-    if (!isTestMode) {
+    if (!isTestMode || !isTestHmac) {
       // Compare HMACs using timing-safe comparison
-      const isValid = crypto.timingSafeEqual(
-        Buffer.from(calculatedHmac, 'base64'),
-        Buffer.from(hmacHeader, 'base64')
-      )
+      const calculatedBuffer = Buffer.from(calculatedHmac, 'base64')
+      const receivedBuffer = Buffer.from(hmacHeader, 'base64')
+      
+      // Ensure buffers have the same length
+      if (calculatedBuffer.length !== receivedBuffer.length) {
+        logger.warn(`Invalid webhook signature for shop: ${shopDomain}`)
+        return res.status(401).json({ error: 'Invalid webhook signature' })
+      }
+      
+      const isValid = crypto.timingSafeEqual(calculatedBuffer, receivedBuffer)
 
       if (!isValid) {
         logger.warn(`Invalid webhook signature for shop: ${shopDomain}`)

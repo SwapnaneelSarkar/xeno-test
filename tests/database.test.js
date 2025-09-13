@@ -4,13 +4,18 @@ describe('Database Connection Tests', () => {
   let prisma
 
   beforeAll(async () => {
+    const databaseUrl = process.env.DATABASE_URL_TEST || process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:3002/xeno_fde_test'
+    
     prisma = new PrismaClient({
       datasources: {
         db: {
-          url: process.env.DATABASE_URL_TEST
+          url: databaseUrl
         }
       }
     })
+    
+    // Connect to database
+    await prisma.$connect()
   })
 
   afterAll(async () => {

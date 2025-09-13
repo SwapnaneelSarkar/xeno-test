@@ -8,6 +8,7 @@
     "start": "node src/app.js",
     "build": "echo 'No build step required for Node.js app'",
     "test": "cross-env NODE_ENV=test jest --runInBand",
+    "test:setup": "bash scripts/test-setup.sh",
     "test:watch": "cross-env NODE_ENV=test jest --watch",
     "test:coverage": "cross-env NODE_ENV=test jest --coverage",
     "test:ci": "cross-env NODE_ENV=test jest --ci --coverage --watchAll=false",
