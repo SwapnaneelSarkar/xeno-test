@@ -10,7 +10,7 @@ function getPrismaClient() {
     return global.testPrisma
   } else if (process.env.NODE_ENV === 'test') {
     // Fallback: create a new client with the test database URL
-    const databaseUrl = process.env.DATABASE_URL || process.env.DATABASE_URL_TEST || 'postgresql://postgres:postgres@localhost:5433/xeno_test'
+    const databaseUrl = process.env.DATABASE_URL || process.env.DATABASE_URL_TEST || 'postgresql://postgres:postgres@localhost:5432/xeno_test'
     console.log('[WEBHOOK SERVICE] Using database URL:', databaseUrl)
     return new PrismaClient({
       datasources: {

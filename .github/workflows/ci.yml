@@ -59,6 +59,7 @@ jobs:
       env:
         NODE_ENV: test
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/xeno_test
+        DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/xeno_test
         REDIS_HOST: localhost
         REDIS_PORT: 6379
         JWT_SECRET: test-secret-key
@@ -68,9 +69,10 @@ jobs:
       run: |
         npm start &
         sleep 10
-        bash scripts/health-check.sh
+        curl -f http://localhost:8080/health || exit 1
       env:
-        NODE_ENV: test
+        NODE_ENV: production
+        RAILWAY_ENVIRONMENT: production
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/xeno_test
         REDIS_HOST: localhost
         REDIS_PORT: 6379

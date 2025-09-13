@@ -13,7 +13,7 @@ describe('Webhook Integration Tests', () => {
     }
     
     // Set the correct database URL for the webhook service
-    const testDatabaseUrl = process.env.DATABASE_URL_TEST || 'postgresql://postgres:postgres@localhost:5433/xeno_test'
+    const testDatabaseUrl = process.env.DATABASE_URL_TEST || 'postgresql://postgres:postgres@localhost:5432/xeno_test'
     process.env.DATABASE_URL = testDatabaseUrl
     console.log('Set DATABASE_URL to:', testDatabaseUrl)
     

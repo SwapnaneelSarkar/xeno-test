@@ -5,7 +5,7 @@ const { execSync } = require('child_process')
 beforeAll(async () => {
   // Set test environment
   process.env.NODE_ENV = 'test'
-  process.env.DATABASE_URL = process.env.DATABASE_URL_TEST || 'postgresql://postgres:postgres@localhost:5433/xeno_test'
+  process.env.DATABASE_URL = process.env.DATABASE_URL_TEST || 'postgresql://postgres:postgres@localhost:5432/xeno_test'
   
   // Run database migrations for test database
   try {
@@ -21,7 +21,7 @@ beforeAll(async () => {
   }
   
   // Initialize test database connection with explicit URL
-  const testDatabaseUrl = process.env.DATABASE_URL_TEST || 'postgresql://postgres:postgres@localhost:5433/xeno_test'
+  const testDatabaseUrl = process.env.DATABASE_URL_TEST || 'postgresql://postgres:postgres@localhost:5432/xeno_test'
   console.log('Creating Prisma client with URL:', testDatabaseUrl)
   
   global.prisma = new PrismaClient({
