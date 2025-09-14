@@ -34,7 +34,6 @@
     "railway:deploy": "railway up",
     "railway:logs": "railway logs",
     "railway:status": "railway status",
-    "postinstall": "npx prisma generate",
     "health:check": "bash scripts/health-check.sh",
     "start:dev": "npm start & bash scripts/health-check.sh"
   },
