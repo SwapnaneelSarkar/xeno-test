@@ -1,5 +1,5 @@
 # Use Node.js LTS version with OpenSSL support
-FROM node:18-alpine
+FROM node:24-alpine
 
 # Install required dependencies for Prisma
 RUN apk add --no-cache openssl openssl-dev libc6-compat
