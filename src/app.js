@@ -23,6 +23,9 @@ const webhookRoutes = require("./routes/webhooks")
 const webhookManagementRoutes = require("./routes/webhookManagement")
 const metricsRoutes = require("./routes/metrics")
 const healthRoutes = require("./routes/health")
+const migrateRoutes = require("./routes/migrate")
+const debugRoutes = require("./routes/debug")
+const demoRoutes = require("./routes/demo")
 
 const app = express()
 const PORT = railwayConfig.app.port
@@ -74,8 +77,12 @@ app.use("/", healthRoutes)
 app.use("/api/auth", authRateLimit, authRoutes)
 app.use("/api/shopify", shopifyRoutes)
 app.use("/api/webhooks", webhookRateLimit, webhookRoutes)
+app.use("/webhooks/shopify", webhookRateLimit, webhookRoutes)
 app.use("/api/webhook-management", webhookManagementRoutes)
 app.use("/api/metrics", metricsRoutes)
+app.use("/api/migrate", migrateRoutes)
+app.use("/api/debug", debugRoutes)
+app.use("/api/demo", demoRoutes)
 
 // 404 handler
 app.use("*", (req, res) => {

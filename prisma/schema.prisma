@@ -15,6 +15,7 @@ model Tenant {
   id              String    @id @default(cuid())
   name            String
   email           String    @unique
+  password        String
   shopDomain      String    @unique
   accessToken     String?
   active          Boolean   @default(true)
