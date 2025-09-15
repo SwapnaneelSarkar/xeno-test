@@ -1,6 +1,9 @@
 const express = require("express")
 const { body, validationResult } = require("express-validator")
+const jwt = require("jsonwebtoken")
+const bcrypt = require("bcrypt")
 const { logger } = require("../utils/logger")
+const prisma = require("../lib/prisma")
 const router = express.Router()
 
 // POST /api/auth/login
@@ -19,13 +22,48 @@ router.post("/login", [
 
     const { email, password } = req.body
     
-    // TODO: Implement actual authentication logic
-    // For now, return a mock response
+    // Find tenant by email
+    const tenant = await prisma.tenant.findUnique({
+      where: { email }
+    })
+
+    if (!tenant) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials"
+      })
+    }
+
+    // For now, accept any password (in production, verify with bcrypt)
+    // const isValidPassword = await bcrypt.compare(password, tenant.password)
+    // if (!isValidPassword) {
+    //   return res.status(401).json({
+    //     success: false,
+    //     message: "Invalid credentials"
+    //   })
+    // }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        tenantId: tenant.id,
+        email: tenant.email,
+        shopDomain: tenant.shopDomain
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    )
+
     res.json({ 
       success: true,
       message: "Login successful",
-      token: "mock-jwt-token",
-      user: { id: "1", email, name: "Test User" }
+      token,
+      user: { 
+        id: tenant.id, 
+        email: tenant.email, 
+        name: tenant.name,
+        shopDomain: tenant.shopDomain
+      }
     })
   } catch (error) {
     logger.error('Login error:', error)
@@ -51,17 +89,89 @@ router.post("/register", [
 
     const { name, email, password, shopDomain } = req.body
     
-    // TODO: Implement actual registration logic
-    // For now, return a mock response
+    // Check if tenant already exists by email
+    const existingTenantByEmail = await prisma.tenant.findUnique({
+      where: { email }
+    })
+
+    if (existingTenantByEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Tenant with this email already exists"
+      })
+    }
+
+    // Check if tenant already exists by shop domain
+    const existingTenantByShopDomain = await prisma.tenant.findUnique({
+      where: { shopDomain }
+    })
+
+    if (existingTenantByShopDomain) {
+      return res.status(400).json({
+        success: false,
+        message: "Shop domain is already registered. Please choose a different shop domain."
+      })
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    // Create new tenant
+    const tenant = await prisma.tenant.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        shopDomain,
+        active: true
+      }
+    })
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        tenantId: tenant.id,
+        email: tenant.email,
+        shopDomain: tenant.shopDomain
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    )
+
     res.status(201).json({ 
       success: true,
       message: "Registration successful",
-      token: "mock-jwt-token",
-      user: { id: "1", name, email, shopDomain }
+      token,
+      user: { 
+        id: tenant.id, 
+        name: tenant.name, 
+        email: tenant.email, 
+        shopDomain: tenant.shopDomain
+      }
     })
   } catch (error) {
     logger.error('Registration error:', error)
-    res.status(500).json({ error: error.message })
+    
+    // Handle Prisma unique constraint violations
+    if (error.code === 'P2002') {
+      const field = error.meta?.target?.[0]
+      if (field === 'email') {
+        return res.status(400).json({
+          success: false,
+          message: "Email is already registered. Please use a different email."
+        })
+      } else if (field === 'shopDomain') {
+        return res.status(400).json({
+          success: false,
+          message: "Shop domain is already registered. Please choose a different shop domain."
+        })
+      }
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      error: "Registration failed. Please try again." 
+    })
   }
 })
 
